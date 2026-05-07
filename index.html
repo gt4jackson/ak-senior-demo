@@ -24,8 +24,8 @@ gtag('config', 'G-SENIOR_REPLACE_ME', { send_page_views: true });
   --bg: #0f0f1a;
   --card: #1a1a2e;
   --card-hover: #222240;
-  --accent: #e94560;
-  --accent-glow: rgba(233, 69, 96, 0.3);
+  --accent: #00c853;
+  --accent-glow: rgba(0, 200, 83, 0.3);
   --yes: #00c853;
   --no: #ff1744;
   --maybe: #ffab00;
@@ -805,7 +805,7 @@ body {
   <div class="header">
     <img src="ak-logo.png" class="header-logo" alt="Action Karate">
     <div class="header-text">
-      <h1>Senior Demo Team</h1>
+      <h1 style="color: var(--accent);">Senior Demo Team</h1>
       <div class="header-sub">Newtown</div>
     </div>
   </div>
@@ -818,6 +818,7 @@ body {
     <button class="setup-btn" onclick="confirmName()" id="confirmBtn" disabled>That's Me — Let's Go</button>
     <p style="margin-top:24px; font-size:13px; color:var(--text-dim);">Not on the list?</p>
     <button class="setup-btn" style="background:var(--card); border:1px solid var(--border); margin-top:8px; font-size:14px;" onclick="requestAccess()">Request to be added</button>
+    <p id="adminLoginLink" style="margin-top:32px; font-size:12px; color:var(--text-dim); cursor:pointer; opacity:0.4;" onclick="showAdminLogin()">Coach/Admin Login</p>
   </div>
 </div>
 
@@ -831,7 +832,7 @@ body {
   <div class="header">
     <img src="ak-logo.png" class="header-logo" alt="Action Karate">
     <div class="header-text">
-      <h1>Senior Demo Team</h1>
+      <h1 style="color: var(--accent);">Senior Demo Team</h1>
       <div class="header-sub">Newtown</div>
     </div>
     <div class="header-user" id="userBar">
@@ -899,6 +900,7 @@ const APP_VERSION = '1.0';
 let scheduleData = null;
 const COACH_ROLES = ['coach', 'administrator'];
 const ADMIN_USERS = ['Mr Kyle', 'Ms Alex'];
+let showAllMembers = false;
 function isCoach(name) {
   if (!scheduleData || !scheduleData.memberRoles) return false;
   return COACH_ROLES.includes((scheduleData.memberRoles[name] || '').toLowerCase());
@@ -907,7 +909,7 @@ function isAdmin(name) {
   return ADMIN_USERS.includes(name);
 }
 function getTeamMembers() {
-  return scheduleData.members.filter(m => !isCoach(m));
+  return scheduleData.members;
 }
 let currentUser = '';
 let currentFilter = 'upcoming';
@@ -964,18 +966,32 @@ async function loadData() {
 function showWelcomeScreen() {
   document.getElementById('welcomeScreen').style.display = 'block';
   document.getElementById('app').style.display = 'none';
+  showAllMembers = false;
+  populateNameDropdown();
+}
+
+function populateNameDropdown() {
   const sel = document.getElementById('welcomeSelect');
-  // Clear existing options (keep the placeholder)
   sel.innerHTML = '<option value="" disabled selected>Choose your name...</option>';
-  scheduleData.members.forEach(name => {
+  const names = showAllMembers
+    ? scheduleData.members
+    : scheduleData.members.filter(m => !isCoach(m));
+  names.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
     opt.textContent = name;
     sel.appendChild(opt);
   });
-  sel.addEventListener('change', () => {
+  sel.onchange = () => {
     document.getElementById('confirmBtn').disabled = !sel.value;
-  });
+  };
+}
+
+function showAdminLogin() {
+  showAllMembers = true;
+  populateNameDropdown();
+  showToast('Coach/Admin names now visible');
+  document.getElementById('adminLoginLink').style.display = 'none';
 }
 
 function confirmName() {
