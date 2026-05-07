@@ -882,7 +882,7 @@ body {
     <div class="admin-sub-tabs">
       <button class="admin-sub-tab active" data-subtab="attendance" onclick="switchAdminSub('attendance')">Schedule</button>
     </div>
-    <div id="adminAttendanceView" class="admin-view" style="display:none;">
+    <div id="adminAttendanceView" class="admin-view">
       <p style="text-align:center; color:var(--text-dim); padding:40px;">Loading schedule...</p>
     </div>
   </div>
@@ -1386,7 +1386,7 @@ async function loadAdmin() {
     adminLoaded = true;
     renderAdminAttendance();
   } catch(err) {
-    document.getElementById('adminWeaponsView').innerHTML =
+    document.getElementById('adminAttendanceView').innerHTML =
       '<p style="text-align:center; color:var(--text-dim); padding:40px;">Could not load admin data.</p>';
   }
 }
