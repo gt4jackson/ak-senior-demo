@@ -942,7 +942,7 @@ body {
 // ---- State ----
 let API_URL = 'https://script.google.com/macros/s/AKfycbzMCLkdCDFAaAlG7E1-t6aj9c__UbeIc_vB44m4MaQe5WsBwwiD72cD1y5MK8ZcjZtO_A/exec';
 const API_TOKEN = 'ak-senior-2026-newtown';
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 let scheduleData = null;
 const COACH_ROLES = ['coach', 'administrator'];
 const ADMIN_USERS = ['Mr Kyle', 'Ms Alex'];
@@ -1647,7 +1647,8 @@ async function toggleNotifications() {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') { showToast('Permission denied'); return; }
-    const token = await fcmMessaging.getToken({ vapidKey: VAPID_KEY });
+    const swReg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const token = await fcmMessaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (!token) { showToast('Could not get token'); return; }
     const res = await fetch(API_URL, {
       method: 'POST',
