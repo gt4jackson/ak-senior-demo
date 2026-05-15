@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ak-senior-v1';
+const CACHE_NAME = 'ak-senior-v2';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './ak-logo.png'];
 
 self.addEventListener('install', e => {
@@ -16,8 +16,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('script.google.com')) {
-    e.respondWith(fetch(e.request));
+  // Never cache API calls — let the browser handle them natively
+  if (e.request.url.includes('script.google.com') || e.request.url.includes('googleapis.com')) {
     return;
   }
   if (e.request.mode === 'navigate' || e.request.url.endsWith('.html')) {
