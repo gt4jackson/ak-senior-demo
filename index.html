@@ -1148,12 +1148,16 @@ function setStored(key, val) {
 }
 
 // ---- Data loading ----
-async function loadData() {
+async function loadData(retryCount = 0) {
+  const MAX_RETRIES = 2;
   const hasSplash = !!document.getElementById('splashScreen');
   if (!hasSplash) document.getElementById('loadingView').style.display = 'block';
   document.getElementById('errorView').style.display = 'none';
   try {
-    const res = await fetch(API_URL + '?action=getSchedule&token=' + API_TOKEN);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(API_URL + '?action=getSchedule&token=' + API_TOKEN, { signal: controller.signal });
+    clearTimeout(timeout);
     scheduleData = await res.json();
     if (scheduleData.error) throw new Error(scheduleData.error);
 
@@ -1161,20 +1165,23 @@ async function loadData() {
     const savedName = getStored('ak_user_locked');
     const pinAuth = getStored('ak_pin_auth');
     if (savedName && allNames.includes(savedName) && pinAuth === 'true') {
-      // Returning authenticated user — go straight to app
       currentUser = savedName;
       currentFamily = JSON.parse(getStored('ak_family_members') || '[]');
       gtag('set', 'user_properties', { team_member: currentUser });
       gtag('event', 'returning_visit', { team_member: currentUser });
       enterApp(currentUser);
     } else {
-      // First-time visitor or needs PIN — show welcome screen
       showWelcomeScreen();
     }
     document.getElementById('refreshNote').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(err) {
-    document.getElementById('errorView').textContent = 'Could not load data: ' + err.message;
-    document.getElementById('errorView').style.display = 'block';
+    if (retryCount < MAX_RETRIES) {
+      await new Promise(r => setTimeout(r, 1500 * (retryCount + 1)));
+      return loadData(retryCount + 1);
+    }
+    const errEl = document.getElementById('errorView');
+    errEl.innerHTML = 'Could not load data: ' + err.message + '<br><span style="font-size:13px; text-decoration:underline; cursor:pointer; margin-top:8px; display:inline-block;" onclick="loadData()">Tap to retry</span>';
+    errEl.style.display = 'block';
   }
   document.getElementById('loadingView').style.display = 'none';
   dismissSplash();
