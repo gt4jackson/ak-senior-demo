@@ -554,6 +554,74 @@ body {
   white-space: nowrap;
 }
 
+/* Resources */
+.resource-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.resource-header {
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-tap-highlight-color: transparent;
+}
+.resource-title { font-size: 15px; font-weight: 600; }
+.resource-meta { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.resource-chevron { color: var(--text-dim); font-size: 14px; flex-shrink: 0; transition: transform 0.2s; }
+.resource-chevron.open { transform: rotate(90deg); }
+.resource-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+.resource-body.open { display: block; }
+.resource-start {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  font-style: italic;
+}
+.resource-start strong { color: var(--text); font-style: normal; }
+.step-list { list-style: none; counter-reset: steps; margin-top: 12px; }
+.step-item {
+  counter-increment: steps;
+  padding: 8px 0 8px 36px;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.45;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.step-item:last-child { border-bottom: none; }
+.step-item::before {
+  content: counter(steps);
+  position: absolute;
+  left: 0; top: 8px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 /* Practice management */
 .practice-form {
   background: var(--card);
@@ -1152,6 +1220,7 @@ body {
   <div class="tabs">
     <button class="tab active" data-tab="schedule" onclick="switchTab('schedule')">Schedule</button>
     <button class="tab" data-tab="chat" onclick="switchTab('chat')">Team Chat<span class="badge" id="chatBadge"></span></button>
+    <button class="tab" data-tab="resources" onclick="switchTab('resources')">Resources</button>
     <button class="tab" data-tab="admin" onclick="switchTab('admin')" id="adminTab" style="display:none;">Admin</button>
   </div>
 
@@ -1176,7 +1245,16 @@ body {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
       </button>
     </div>
-  </div>  <!-- Admin tab -->
+  </div>
+
+  <!-- Resources tab -->
+  <div id="resourcesSection" class="section">
+    <div id="resourcesList">
+      <p style="text-align:center; color:var(--text-dim); padding:40px;">Loading resources...</p>
+    </div>
+  </div>
+
+  <!-- Admin tab -->
   <div id="adminSection" class="section">
     <div class="admin-sub-tabs">
       <button class="admin-sub-tab active" data-subtab="practices" onclick="switchAdminSub('practices')">Practices</button>
@@ -1204,7 +1282,7 @@ body {
 // ---- State ----
 let API_URL = 'https://script.google.com/macros/s/AKfycbzMCLkdCDFAaAlG7E1-t6aj9c__UbeIc_vB44m4MaQe5WsBwwiD72cD1y5MK8ZcjZtO_A/exec';
 const API_TOKEN = 'ak-senior-2026-newtown';
-const APP_VERSION = '1.12';
+const APP_VERSION = '1.13';
 let scheduleData = null;
 const COACH_ROLES = ['coach', 'administrator'];
 let showAllMembers = false;
@@ -1716,6 +1794,9 @@ function switchTab(tab) {
     else renderMessages();
     markChatRead();
     scrollChatToBottom();
+  } else if (tab === 'resources') {
+    document.getElementById('resourcesSection').classList.add('active');
+    if (!resourcesLoaded) loadResources();
   } else if (tab === 'admin') {
     if (!isAdmin(currentUser)) return;
     document.getElementById('adminSection').classList.add('active');
@@ -2371,6 +2452,64 @@ async function adminResetPin(memberName) {
   } catch(e) {
     showToast('Connection error');
   }
+}
+
+// ---- Resources ----
+let resourcesLoaded = false;
+let resourcesData = [];
+
+async function loadResources() {
+  try {
+    const res = await fetch(API_URL + '?action=getResources&token=' + API_TOKEN);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    resourcesData = data.resources || [];
+    resourcesLoaded = true;
+    renderResources();
+  } catch(err) {
+    document.getElementById('resourcesList').innerHTML =
+      '<p style="text-align:center; color:var(--text-dim); padding:40px;">Could not load resources.</p>';
+  }
+}
+
+function renderResources() {
+  const container = document.getElementById('resourcesList');
+  if (resourcesData.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:var(--text-dim); padding:40px;">No resources yet.</p>';
+    return;
+  }
+  container.innerHTML = resourcesData.map((r, i) => {
+    const moveCount = r.moves.length;
+    const meta = [
+      moveCount ? moveCount + ' moves' : '',
+      r.startPosition ? 'Starting: ' + r.startPosition : '',
+      r.videoUrl ? 'Video' : ''
+    ].filter(Boolean).join(' · ');
+
+    return `
+      <div class="resource-card">
+        <div class="resource-header" onclick="toggleResource(${i})">
+          <div>
+            <div class="resource-title">${escapeHtml(r.name)}</div>
+            <div class="resource-meta">${meta}</div>
+          </div>
+          <span class="resource-chevron" id="resChev${i}">&#9654;</span>
+        </div>
+        <div class="resource-body" id="resBody${i}">
+          ${r.startPosition ? '<div class="resource-start"><strong>Starting Position:</strong> ' + escapeHtml(r.startPosition) + '</div>' : ''}
+          ${moveCount ? '<ol class="step-list">' + r.moves.map(m => '<li class="step-item">' + escapeHtml(m) + '</li>').join('') + '</ol>' : ''}
+          ${r.videoUrl ? '<a href="' + escapeHtml(r.videoUrl) + '" target="_blank" rel="noopener noreferrer" class="video-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch Demo Video</a>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleResource(idx) {
+  const body = document.getElementById('resBody' + idx);
+  const chev = document.getElementById('resChev' + idx);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
 }
 
 // ---- Pull to Refresh ----
