@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ak-senior-v2';
+const CACHE_NAME = 'ak-senior-v4';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './ak-logo.png'];
 
 self.addEventListener('install', e => {
